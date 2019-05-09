@@ -1,0 +1,135 @@
+gitbub相关demo: 
+https://github.com/vstaryw/third_party_login
+1.前后端分离情况
+a.页面携带参数发送请求appid,app_secret,redirect_uri
+		href="https://open.weixin.qq.com/connect/qrconnect?appid=wxdfe3a15b7c601be8&redirect_uri=http%3a%2f%2f221.226.240.134%3a12420%2fslshop%2fshop%2ftpclass%2fApplication%2fHome%2fView%2fUser%2flogin_from.html&response_type=code&scope=snsapi_login#wechat_redirect"
+注：回调路径需要使用urlEncode转码（回调地址为前台登录页面，点击微信登录时先关闭原来登录页面，再发送请求）
+
+b.微信开放平台设置回调路径：只填写域名即可
+c.前台登录页面处理返回来的url，处理url获取code,使用ajax发送到后台处理。
+后台代码：先获取code,携带code发送请求获取openid，通过openid判断该用户是否存在，若不存在，则数据库新建一条记录，若存在则拉取该用户信息放回到前台。
+@RequestMapping(value = "/authWX")
+    @ResponseBody
+	public String  openWeChatCallback(HttpServletRequest req, Model model) throws Exception{
+    	//1. 获取微信回调请求中的code  
+    	String code=req.getParameter("code");
+//    	String state=req.getParameter("state");
+    	 String access_token_url  = "https://api.weixin.qq.com/sns/oauth2/access_token?appid=wxdfe3a15b7c601be8&secret=4994572a735c107b7cc63399741a260d&code="+code+"&grant_type=authorization_code";
+         String json = HttpClientUtil.doGet(access_token_url);
+         JSONObject jsonObj = JSON.parseObject(json);
+         //获取用户微信登录openid
+         String openid = (String) jsonObj.get("openid");
+         String result=null;
+         Map<String,Object> param=new HashMap<String,Object>();
+         param.put("wxOpenid", openid);
+         DedeWebUser user=commonService.queryForObject("queryWebUserByWX", param);
+         if(openid!=null){
+        	 if(user!=null){
+            	 result="ok"+ "-"+user.getId()+"-"+user.getNickName();
+             }else{
+            	 //如果该用户不存在，则拉取用户信息加入数据库
+            	 DedeWebUser user1=new DedeWebUser();
+            	 user1.setWxOpenid(openid);
+            	 String access_token = (String) jsonObj.get("access_token");
+                 String getinfo = "https://api.weixin.qq.com/sns/userinfo?access_token="+access_token+"&openid="+openid;
+                 String baseInfo = HttpClientUtil.doGet(getinfo);
+                 JSONObject baseinfoObj = JSON.parseObject(baseInfo);
+                 Integer gender=(Integer)baseinfoObj.get("sex");
+                 String nickname=(String)baseinfoObj.get("nickname");
+                 user1.setAddress((String)baseinfoObj.get(""));
+                 user1.setAccout(nickname);
+                 user1.setNickName(nickname);
+                 user1.setGender(gender+"");
+                 user1.setIsDel(1);
+                 commonService.insert("insertWebUser", user1);
+                 Integer id=user1.getId();
+                 result="ok"+ "-"+id+"-"+user1.getNickName();
+             }
+         }else{
+        	 result="授权登录失败";
+         }
+         
+        
+         return result;
+    }
+
+d.前台获取完用户信息之后，跳转到网站首页
+
+2.前后台不分离，使用动态页面
+a. 页面携带参数发送请求appid,app_secret,redirect_uri
+		href="https://open.weixin.qq.com/connect/qrconnect?appid=wxdfe3a15b7c601be8&redirect_uri=http%3a%2f%2f221.226.240.134%3a12420%2fslshop%2fshop%2ftpclass%2fApplication%2fHome%2fView%2fUser%2flogin_from.html&response_type=code&scope=snsapi_login#wechat_redirect"
+注：回调路径需要使用urlEncode转码（回调地址为后台controller请求路径）
+
+b.controller处理代码：此处result为数据处理完成之后跳转的前台页面
+	@RequestMapping(value = "/authWX")
+    @ResponseBody
+	public  String  openWeChatCallback(HttpServletRequest req, Model model) throws Exception{
+    	//1. 获取微信回调请求中的code  
+    	String code=req.getParameter("code");
+    	String state=req.getParameter("state");
+    	 String access_token_url  = "https://api.weixin.qq.com/sns/oauth2/access_token?appid=wxdfe3a15b7c601be8&secret=4994572a735c107b7cc63399741a260d&code="+code+"&grant_type=authorization_code";
+         String json = HttpClientUtil.doGet(access_token_url);
+         JSONObject jsonObj = JSON.parseObject(json);
+         //获取用户微信登录openid
+         String openid = (String) jsonObj.get("openid");
+         String result=null;
+         Map<String,Object> param=new HashMap<String,Object>();
+         param.put("wxOpenid", openid);
+         DedeWebUser user=commonService.queryForObject("queryWebUserByWX", param);
+         if(openid!=null){
+        	 if(user!=null){
+            	 result="ok"+ "-"+user.getId()+"-"+user.getNickName();
+             }else{
+            	 //如果该用户不存在，则拉取用户信息加入数据库
+            	 DedeWebUser user1=new DedeWebUser();
+            	 user1.setWxOpenid(openid);
+            	 String access_token = (String) jsonObj.get("access_token");
+                 String getinfo = "https://api.weixin.qq.com/sns/userinfo?access_token="+access_token+"&openid="+openid;
+                 String baseInfo = HttpClientUtil.doGet(getinfo);
+                 JSONObject baseinfoObj = JSON.parseObject(baseInfo);
+                 Integer gender=(Integer)baseinfoObj.get("sex");
+                 String nickname=(String)baseinfoObj.get("nickname");
+                 user1.setAddress((String)baseinfoObj.get(""));
+                 user1.setAccout(nickname);
+                 user1.setNickName(nickname);
+                 user1.setGender(gender+"");
+                 user1.setIsDel(1);
+                 commonService.insert("insertWebUser", user1);
+                 Integer id=user1.getId();
+                 result="ok"+ "-"+id+"-"+user1.getNickName();
+             }
+         }else{
+        	 result="/error ";
+         }
+         
+        
+         return result;
+    }
+
+pom文件
+		<dependency>
+	      <groupId>org.apache.httpcomponents</groupId>
+	      <artifactId>httpclient</artifactId>
+	      <version>4.5.2</version>
+	    </dependency> 
+	    <!-- 微信登录所需jar -->
+	   		<dependency>
+			<groupId>commons-httpclient</groupId>
+			<artifactId>commons-httpclient</artifactId>
+			<version>3.0.1</version>
+		</dependency>
+
+
+				<!--json-lib -->
+		<dependency>
+			<groupId>net.sf.json-lib</groupId>
+			<artifactId>json-lib</artifactId>
+			<version>2.4</version>
+			<classifier>jdk15</classifier>
+		</dependency>
+
+工具类：HttpClientUtil
+
+
+
+
