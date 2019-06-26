@@ -2,7 +2,7 @@ gitbub相关demo:
 https://github.com/vstaryw/third_party_login
 1.前后端分离情况
 a.页面携带参数发送请求appid,app_secret,redirect_uri
-		href="https://open.weixin.qq.com/connect/qrconnect?appid=wxdfe3a15b7c601be8&redirect_uri=http%3a%2f%2f221.226.240.134%3a12420%2fslshop%2fshop%2ftpclass%2fApplication%2fHome%2fView%2fUser%2flogin_from.html&response_type=code&scope=snsapi_login#wechat_redirect"
+		href="https://open.weixin.qq.com/connect/qrconnect?appid=APPID&redirect_uri=ENCODE(redirect_uri)&response_type=code&scope=snsapi_login#wechat_redirect"
 注：回调路径需要使用urlEncode转码（回调地址为前台登录页面，点击微信登录时先关闭原来登录页面，再发送请求）
 
 b.微信开放平台设置回调路径：只填写域名即可
@@ -14,7 +14,7 @@ c.前台登录页面处理返回来的url，处理url获取code,使用ajax发送
     	//1. 获取微信回调请求中的code  
     	String code=req.getParameter("code");
 //    	String state=req.getParameter("state");
-    	 String access_token_url  = "https://api.weixin.qq.com/sns/oauth2/access_token?appid=wxdfe3a15b7c601be8&secret=4994572a735c107b7cc63399741a260d&code="+code+"&grant_type=authorization_code";
+    	 String access_token_url  = "https://api.weixin.qq.com/sns/oauth2/access_token?appid=APPID&secret=SECRET&code="+code+"&grant_type=authorization_code";
          String json = HttpClientUtil.doGet(access_token_url);
          JSONObject jsonObj = JSON.parseObject(json);
          //获取用户微信登录openid
@@ -108,10 +108,10 @@ b.controller处理代码：此处result为数据处理完成之后跳转的前�
 
 pom文件
 		<dependency>
-	      <groupId>org.apache.httpcomponents</groupId>
-	      <artifactId>httpclient</artifactId>
-	      <version>4.5.2</version>
-	    </dependency> 
+		      <groupId>org.apache.httpcomponents</groupId>
+		      <artifactId>httpclient</artifactId>
+		      <version>4.5.2</version>
+		</dependency> 
 	    <!-- 微信登录所需jar -->
 	   		<dependency>
 			<groupId>commons-httpclient</groupId>
